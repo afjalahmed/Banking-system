@@ -103,6 +103,7 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="/admin/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>

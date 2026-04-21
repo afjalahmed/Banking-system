@@ -51,6 +51,7 @@ $pending_transactions_list = fetchAll($pending_transactions_list_result);
                 <li><a href="/employee/pending_transactions.php"><i class="fas fa-clock"></i> Pending Transactions</a></li>
                 <li><a href="/employee/customers.php"><i class="fas fa-users"></i> View Customers</a></li>
                 <li><a href="/employee/transactions.php"><i class="fas fa-exchange-alt"></i> Transaction History</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>

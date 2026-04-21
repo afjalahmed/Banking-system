@@ -49,8 +49,7 @@ $total_withdrawals = fetchOne($total_withdrawals_result)['total'];
                 <li><a href="/customer/transfer.php"><i class="fas fa-paper-plane"></i> Transfer</a></li>
                 <li><a href="/customer/deposit.php"><i class="fas fa-arrow-down"></i> Deposit</a></li>
                 <li><a href="/customer/withdraw.php"><i class="fas fa-arrow-up"></i> Withdraw</a></li>
-                <li><a href="/customer/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
-                <li><a href="/customer/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>

@@ -93,6 +93,7 @@ $role_counts = fetchAll($role_counts_result);
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="/admin/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
@@ -112,7 +113,10 @@ $role_counts = fetchAll($role_counts_result);
         <div class="table-container">
             <div class="table-header">
                 <h2>All Users</h2>
-                <div class="filter-controls">
+                <div class="filter-controls" style="display: flex; gap: 1rem; align-items: center;">
+                    <a href="/admin/user_form.php" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Create User
+                    </a>
                     <form method="GET" class="filter-form">
                         <select name="role" onchange="this.form.submit()">
                             <option value="all" <?php echo $role_filter === 'all' ? 'selected' : ''; ?>>All Roles</option>
@@ -176,6 +180,9 @@ $role_counts = fetchAll($role_counts_result);
                         <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                         <td><?php echo $user['last_login'] ? date('M d, Y H:i', strtotime($user['last_login'])) : 'Never'; ?></td>
                         <td class="actions">
+                            <a href="/admin/user_form.php?id=<?php echo $user['user_id']; ?>" class="btn btn-sm btn-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
                             <?php if ($user['user_id'] !== $_SESSION['user_id']): ?>
                                 <?php if ($user['status'] === 'active'): ?>
                                 <form method="POST" style="display: inline;" onsubmit="return confirm('Deactivate this user?');">
@@ -201,8 +208,6 @@ $role_counts = fetchAll($role_counts_result);
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
-                            <?php else: ?>
-                                <span class="text-muted">Current User</span>
                             <?php endif; ?>
                         </td>
                     </tr>
