@@ -10,7 +10,11 @@ require_once 'auth.php';
 $user_id = $_SESSION['user_id'];
 
 // Get user's accounts
-$accounts_sql = "SELECT * FROM accounts WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC";
+$accounts_sql = "SELECT a.*, at.type_name as account_type_name 
+    FROM accounts a 
+    LEFT JOIN account_types at ON a.account_type_id = at.id 
+    WHERE a.user_id = ? AND a.status = 'active' 
+    ORDER BY a.created_at DESC";
 $accounts_result = executeQuery($accounts_sql, [$user_id]);
 $accounts = fetchAll($accounts_result);
 
@@ -20,19 +24,48 @@ foreach ($accounts as $account) {
     $total_balance += $account['balance'];
 }
 
-// Get recent transactions
-$recent_transactions_sql = "SELECT t.*, fa.account_number as from_account, ta.account_number as to_account FROM transactions t LEFT JOIN accounts fa ON t.from_account_id = fa.account_id LEFT JOIN accounts ta ON t.to_account_id = ta.account_id WHERE t.from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) OR t.to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) ORDER BY t.created_at DESC LIMIT 10";
+// Get recent transactions with account type names
+$recent_transactions_sql = "SELECT t.*, 
+    fa.account_number as from_account, 
+    ta.account_number as to_account,
+    at.type_name as account_type_name
+FROM transactions t 
+LEFT JOIN accounts fa ON t.from_account_id = fa.account_id 
+LEFT JOIN accounts ta ON t.to_account_id = ta.account_id
+LEFT JOIN account_types at ON fa.account_type_id = at.id
+WHERE t.from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) 
+   OR t.to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) 
+ORDER BY t.created_at DESC 
+LIMIT 10";
 $recent_transactions_result = executeQuery($recent_transactions_sql, [$user_id, $user_id]);
 $recent_transactions = fetchAll($recent_transactions_result);
 
-// Get transaction statistics
-$total_deposits_sql = "SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE transaction_type = 'deposit' AND (from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) OR to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?))";
+// Get transaction statistics (only APPROVED transactions count toward totals)
+$total_deposits_sql = "SELECT COALESCE(SUM(amount), 0) as total 
+    FROM transactions 
+    WHERE transaction_type = 'deposit' 
+    AND status = 'APPROVED'
+    AND (from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) 
+         OR to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?))";
 $total_deposits_result = executeQuery($total_deposits_sql, [$user_id, $user_id]);
 $total_deposits = fetchOne($total_deposits_result)['total'];
 
-$total_withdrawals_sql = "SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE transaction_type = 'withdrawal' AND (from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) OR to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?))";
+$total_withdrawals_sql = "SELECT COALESCE(SUM(amount), 0) as total 
+    FROM transactions 
+    WHERE transaction_type = 'withdrawal' 
+    AND status = 'APPROVED'
+    AND (from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) 
+         OR to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?))";
 $total_withdrawals_result = executeQuery($total_withdrawals_sql, [$user_id, $user_id]);
 $total_withdrawals = fetchOne($total_withdrawals_result)['total'];
+
+// Get pending transactions count
+$pending_count_sql = "SELECT COUNT(*) as count FROM transactions 
+    WHERE status = 'PENDING'
+    AND (from_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?) 
+         OR to_account_id IN (SELECT account_id FROM accounts WHERE user_id = ?))";
+$pending_count_result = executeQuery($pending_count_sql, [$user_id, $user_id]);
+$pending_count = fetchOne($pending_count_result)['count'];
 ?>
 
 <div class="dashboard-layout">
@@ -106,6 +139,17 @@ $total_withdrawals = fetchOne($total_withdrawals_result)['total'];
                     <div class="stat-value">$<?php echo number_format($total_withdrawals, 2); ?></div>
                 </div>
             </div>
+
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Pending</h3>
+                    <div class="stat-value"><?php echo number_format($pending_count); ?></div>
+                    <small>transactions awaiting approval</small>
+                </div>
+            </div>
         </div>
 
         <!-- Quick Actions -->
@@ -146,13 +190,29 @@ $total_withdrawals = fetchOne($total_withdrawals_result)['total'];
             <?php else: ?>
             <div style="padding: 1.5rem;">
                 <?php foreach ($accounts as $account): ?>
-                <div class="account-card">
-                    <h3><?php echo htmlspecialchars($account['account_name']); ?></h3>
-                    <div class="account-number"><?php echo htmlspecialchars($account['account_number']); ?></div>
-                    <div class="account-balance">$<?php echo number_format($account['balance'], 2); ?></div>
-                    <div>
-                        <span class="account-type"><?php echo ucfirst($account['account_type']); ?></span>
-                        <span class="badge badge-success" style="margin-left: 0.5rem;"><?php echo ucfirst($account['status']); ?></span>
+                <div class="account-card" style="border-left: 4px solid var(--primary-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h3><?php echo htmlspecialchars($account['account_name']); ?></h3>
+                            <div class="account-number"><?php echo htmlspecialchars($account['account_number']); ?></div>
+                        </div>
+                        <span class="badge badge-success"><?php echo ucfirst($account['status']); ?></span>
+                    </div>
+                    <div class="account-balance" style="font-size: 1.75rem; margin: 1rem 0;">$<?php echo number_format($account['balance'], 2); ?></div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <span class="badge badge-info"><?php echo htmlspecialchars($account['account_type_name'] ?? ucfirst($account['account_type'])); ?></span>
+                        <span class="badge badge-secondary"><?php echo htmlspecialchars($account['branch_name'] ?? 'Main Branch'); ?></span>
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <a href="/customer/deposit.php?account_id=<?php echo $account['account_id']; ?>" class="btn btn-sm btn-success">
+                            <i class="fas fa-arrow-down"></i> Deposit
+                        </a>
+                        <a href="/customer/withdraw.php?account_id=<?php echo $account['account_id']; ?>" class="btn btn-sm btn-danger">
+                            <i class="fas fa-arrow-up"></i> Withdraw
+                        </a>
+                        <a href="/customer/transfer.php?from_account=<?php echo $account['account_id']; ?>" class="btn btn-sm btn-primary">
+                            <i class="fas fa-paper-plane"></i> Transfer
+                        </a>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -203,8 +263,8 @@ $total_withdrawals = fetchOne($total_withdrawals_result)['total'];
                         </td>
                         <td>$<?php echo number_format($transaction['amount'], 2); ?></td>
                         <td>
-                            <span class="badge badge-<?php echo $transaction['status'] === 'completed' ? 'success' : ($transaction['status'] === 'pending' ? 'warning' : 'danger'); ?>">
-                                <?php echo ucfirst($transaction['status']); ?>
+                            <span class="badge badge-<?php echo $transaction['status'] === 'APPROVED' ? 'success' : ($transaction['status'] === 'PENDING' ? 'warning' : 'danger'); ?>">
+                                <?php echo $transaction['status']; ?>
                             </span>
                         </td>
                         <td><?php echo date('M d, Y H:i', strtotime($transaction['created_at'])); ?></td>

@@ -29,21 +29,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($transaction) {
             if ($action === 'approve') {
-                // VALIDATION: Check sufficient balance for withdrawals and transfers
+                // VALIDATION: Check accounts exist and are active
                 $can_approve = true;
                 
-                if ($transaction['transaction_type'] === 'withdrawal' && $transaction['from_account_id']) {
+                // Validate source account for withdrawals and transfers
+                if (in_array($transaction['transaction_type'], ['withdrawal', 'transfer'])) {
+                    if (!$transaction['from_account_id']) {
+                        $errors[] = "Cannot approve: Source account not found";
+                        $can_approve = false;
+                    } else {
+                        // Check source account is active
+                        $check_source_sql = "SELECT status FROM accounts WHERE account_id = ? AND status = 'active'";
+                        $check_source_result = executeQuery($check_source_sql, [$transaction['from_account_id']]);
+                        if (!fetchOne($check_source_result)) {
+                            $errors[] = "Cannot approve: Source account " . $transaction['from_acc_num'] . " is not active";
+                            $can_approve = false;
+                        }
+                    }
+                }
+                
+                // Validate destination account for deposits and transfers
+                if (in_array($transaction['transaction_type'], ['deposit', 'transfer'])) {
+                    if (!$transaction['to_account_id']) {
+                        $errors[] = "Cannot approve: Destination account not found";
+                        $can_approve = false;
+                    } else {
+                        // Check destination account is active
+                        $check_dest_sql = "SELECT status FROM accounts WHERE account_id = ? AND status = 'active'";
+                        $check_dest_result = executeQuery($check_dest_sql, [$transaction['to_account_id']]);
+                        if (!fetchOne($check_dest_result)) {
+                            $errors[] = "Cannot approve: Destination account " . $transaction['to_acc_num'] . " is not active";
+                            $can_approve = false;
+                        }
+                    }
+                }
+                
+                // VALIDATION: Check sufficient balance for withdrawals and transfers
+                if ($can_approve && $transaction['transaction_type'] === 'withdrawal' && $transaction['from_account_id']) {
                     if ($transaction['from_balance'] < $transaction['amount']) {
                         $errors[] = "Cannot approve: Insufficient balance in account " . $transaction['from_acc_num'] . 
                                    " (Available: $" . number_format($transaction['from_balance'], 2) . 
                                    ", Required: $" . number_format($transaction['amount'], 2) . ")";
                         $can_approve = false;
                     }
-                } elseif ($transaction['transaction_type'] === 'transfer' && $transaction['from_account_id']) {
+                    // Additional check: ensure balance won't go negative after update
+                    $new_balance = $transaction['from_balance'] - $transaction['amount'];
+                    if ($new_balance < 0) {
+                        $errors[] = "Cannot approve: Transaction would result in negative balance";
+                        $can_approve = false;
+                    }
+                } elseif ($can_approve && $transaction['transaction_type'] === 'transfer' && $transaction['from_account_id']) {
                     if ($transaction['from_balance'] < $transaction['amount']) {
                         $errors[] = "Cannot approve: Insufficient balance in source account " . $transaction['from_acc_num'] . 
                                    " (Available: $" . number_format($transaction['from_balance'], 2) . 
                                    ", Required: $" . number_format($transaction['amount'], 2) . ")";
+                        $can_approve = false;
+                    }
+                    // Additional check: ensure balance won't go negative after update
+                    $new_balance = $transaction['from_balance'] - $transaction['amount'];
+                    if ($new_balance < 0) {
+                        $errors[] = "Cannot approve: Transaction would result in negative balance";
                         $can_approve = false;
                     }
                 }

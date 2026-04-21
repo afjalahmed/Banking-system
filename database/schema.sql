@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     transaction_type ENUM('deposit', 'withdrawal', 'transfer', 'fee', 'interest') NOT NULL,
     amount DECIMAL(15, 2) NOT NULL,
     description TEXT,
-    status ENUM('pending', 'completed', 'failed', 'cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at DATETIME DEFAULT NULL,
     processed_by INT DEFAULT NULL,
