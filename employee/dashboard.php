@@ -46,11 +46,12 @@ $pending_transactions_list = fetchAll($pending_transactions_list_result);
                 <li><a href="/employee/dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="/employee/add_customer.php"><i class="fas fa-user-plus"></i> Add Customer</a></li>
                 <li><a href="/employee/create_account.php"><i class="fas fa-university"></i> Create Account</a></li>
+                <li><a href="/employee/accounts.php"><i class="fas fa-list"></i> All Accounts</a></li>
                 <li><a href="/employee/deposit.php"><i class="fas fa-arrow-down"></i> Deposit</a></li>
                 <li><a href="/employee/withdraw.php"><i class="fas fa-arrow-up"></i> Withdraw</a></li>
+                <li><a href="/employee/transactions.php"><i class="fas fa-exchange-alt"></i> Transaction History</a></li>
                 <li><a href="/employee/pending_transactions.php"><i class="fas fa-clock"></i> Pending Transactions</a></li>
                 <li><a href="/employee/customers.php"><i class="fas fa-users"></i> View Customers</a></li>
-                <li><a href="/employee/transactions.php"><i class="fas fa-exchange-alt"></i> Transaction History</a></li>
                 <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>

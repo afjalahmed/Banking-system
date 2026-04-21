@@ -3,30 +3,34 @@
  * Customer Session Protection
  * Banking & Transaction System
  * Include this file at the top of all customer pages
+ * 
+ * ACCESS LEVEL: View Only (Own Data)
+ * - Can view own accounts
+ * - Can view own transactions
+ * - Can update own profile
+ * - Can perform transfers (from own accounts)
+ * - Cannot access other customers' data
+ * - Cannot access admin or employee pages
  */
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../includes/access_control.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
-    $_SESSION['error'] = 'You must be logged in to access this page.';
-    header('Location: /customer/login.php');
-    exit();
-}
+// Protect page - Customer only
+protectPage(['customer']);
 
-// Check if user has customer role
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'customer') {
-    $_SESSION['error'] = 'Access denied. Customer account required.';
-    header('Location: /customer/login.php');
-    exit();
-}
+// Additional security: Verify user can only access own data
+// This is enforced at the data query level in each page
 
-// Regenerate session ID to prevent session fixation
-if (!isset($_SESSION['customer_regenerated'])) {
+// Regenerate session ID periodically for security
+if (!isset($_SESSION['customer_regenerated']) || 
+    (isset($_SESSION['last_activity']) && time() - $_SESSION['last_activity'] > 1800)) {
     session_regenerate_id(true);
     $_SESSION['customer_regenerated'] = true;
 }
+
+// Set last activity timestamp
+$_SESSION['last_activity'] = time();
+
+// Set security flag for additional data filtering
+$_SESSION['data_access_level'] = 'own_only';
 ?>

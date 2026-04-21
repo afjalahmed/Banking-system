@@ -2,12 +2,37 @@
 /**
  * User Profile - Edit own profile
  * Banking & Transaction System
+ * 
+ * ACCESS CONTROL:
+ * - All roles can access this page
+ * - Users can only edit their OWN profile
+ * - Admins can view any profile via user_id param but still only edit their own
  */
 
 require_once 'includes/header.php';
+require_once 'includes/access_control.php';
+
+// Check login
 requireLogin();
 
-$user_id = $_SESSION['user_id'];
+// Get current user ID
+$current_user_id = $_SESSION['user_id'];
+$current_role = getUserRole();
+
+// Check if viewing another user's profile (admin only for viewing)
+$view_user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : $current_user_id;
+
+// Only admin can view other profiles, everyone else can only view their own
+if ($view_user_id !== $current_user_id && $current_role !== 'admin') {
+    $_SESSION['error'] = 'You can only view and edit your own profile.';
+    header('Location: /profile.php');
+    exit();
+}
+
+// Set the user ID for data fetching
+$user_id = $view_user_id;
+$can_edit = ($user_id === $current_user_id); // Can only edit own profile
+
 $errors = [];
 $success = false;
 
@@ -28,6 +53,13 @@ if (!$user) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Security check: Only allow editing own profile
+    if (!$can_edit) {
+        $_SESSION['error'] = 'You can only edit your own profile.';
+        header('Location: /profile.php');
+        exit();
+    }
+    
     $action = $_POST['action'] ?? '';
     
     if ($action === 'update_profile') {
@@ -156,12 +188,26 @@ if ($_SESSION['role'] === 'admin') {
     <!-- Main Content -->
     <main class="dashboard-content">
         <div class="dashboard-header">
-            <h1><i class="fas fa-user-cog"></i> Edit Profile</h1>
+            <h1>
+                <i class="fas fa-user-cog"></i> 
+                <?php echo $can_edit ? 'Edit Profile' : 'View Profile'; ?>
+                <?php if (!$can_edit): ?>
+                <small style="font-size: 0.5em; color: var(--warning-color);">(Read Only)</small>
+                <?php endif; ?>
+            </h1>
             <div class="user-info">
                 <span>Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
                 <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
             </div>
         </div>
+        
+        <?php if (!$can_edit): ?>
+        <!-- Read-only notice -->
+        <div class="alert alert-warning" style="margin-bottom: 1rem;">
+            <i class="fas fa-eye"></i> You are viewing <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>'s profile in read-only mode. 
+            <a href="/profile.php" style="text-decoration: underline;">View your own profile</a>
+        </div>
+        <?php endif; ?>
 
         <!-- Success Message -->
         <?php if ($success): ?>
@@ -190,7 +236,7 @@ if ($_SESSION['role'] === 'admin') {
                     <h2><i class="fas fa-user"></i> Profile Information</h2>
                 </div>
                 
-                <form method="POST" style="padding: 2rem;">
+                <form method="POST" style="padding: 2rem;" <?php echo !$can_edit ? 'onsubmit="return false;"' : ''; ?>>
                     <input type="hidden" name="action" value="update_profile">
                     
                     <div class="form-group">
@@ -219,34 +265,41 @@ if ($_SESSION['role'] === 'admin') {
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="full_name">Full Name <span class="required">*</span></label>
                         <input type="text" id="full_name" name="full_name" class="form-control" 
-                               value="<?php echo htmlspecialchars($user['full_name']); ?>" required>
+                               value="<?php echo htmlspecialchars($user['full_name']); ?>" 
+                               <?php echo !$can_edit ? 'disabled' : 'required'; ?>>
                     </div>
                     
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="email">Email <span class="required">*</span></label>
                         <input type="email" id="email" name="email" class="form-control" 
-                               value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                               value="<?php echo htmlspecialchars($user['email']); ?>" 
+                               <?php echo !$can_edit ? 'disabled' : 'required'; ?>>
                     </div>
                     
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="phone">Phone <span class="required">*</span></label>
                         <input type="tel" id="phone" name="phone" class="form-control" 
-                               value="<?php echo htmlspecialchars($user['phone']); ?>" required>
+                               value="<?php echo htmlspecialchars($user['phone']); ?>" 
+                               <?php echo !$can_edit ? 'disabled' : 'required'; ?>>
                     </div>
                     
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="address">Address</label>
-                        <textarea id="address" name="address" class="form-control" rows="3"><?php echo htmlspecialchars($user['address']); ?></textarea>
+                        <textarea id="address" name="address" class="form-control" rows="3" 
+                                  <?php echo !$can_edit ? 'disabled' : ''; ?>><?php echo htmlspecialchars($user['address']); ?></textarea>
                     </div>
                     
+                    <?php if ($can_edit): ?>
                     <div class="form-actions" style="margin-top: 1.5rem;">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Update Profile
                         </button>
                     </div>
+                    <?php endif; ?>
                 </form>
             </div>
 
+            <?php if ($can_edit): ?>
             <!-- Change Password -->
             <div class="table-container">
                 <div class="table-header">
@@ -280,6 +333,7 @@ if ($_SESSION['role'] === 'admin') {
                     </div>
                 </form>
             </div>
+            <?php endif; ?>
         </div>
     </main>
 </div>

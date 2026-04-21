@@ -56,37 +56,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate transaction reference
                 $transaction_reference = 'TRF' . date('YmdHis') . rand(1000, 9999);
                 
-                // Start transaction
-                $conn->begin_transaction();
+                // Check if transfer is to own account or external
+                $is_own_account = ($dest_account['user_id'] == $user_id);
                 
-                try {
-                    // Deduct from source account
-                    $new_source_balance = $source_account['balance'] - $amount;
-                    $update_source_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
-                    $stmt = executeQuery($update_source_sql, [$new_source_balance, $source_account['account_id']);
+                if ($is_own_account) {
+                    // TRANSFER TO OWN ACCOUNT - Auto-complete (no approval needed)
+                    $conn->begin_transaction();
                     
-                    // Add to destination account
-                    $get_dest_balance_sql = "SELECT balance FROM accounts WHERE account_id = ?";
-                    $stmt = executeQuery($get_dest_balance_sql, [$dest_account['account_id']]);
-                    $dest_balance_result = fetchOne($stmt);
-                    $new_dest_balance = $dest_balance_result['balance'] + $amount;
-                    
-                    $update_dest_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
-                    $stmt = executeQuery($update_dest_sql, [$new_dest_balance, $dest_account['account_id']]);
-                    
-                    // Insert transaction record
-                    $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'completed', NOW(), ?)";
-                    $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $source_account['account_id'], $dest_account['account_id'], $amount, $description, $user_id]);
-                    
-                    // Commit transaction
-                    $conn->commit();
-                    
-                    $_SESSION['success'] = 'Transfer of $' . number_format($amount, 2) . ' from account ' . $source_account['account_number'] . ' to account ' . $dest_account['account_number'] . ' was successful.';
-                    header('Location: /customer/dashboard.php');
-                    exit();
-                } catch (Exception $e) {
-                    $conn->rollback();
-                    $_SESSION['error'] = 'Transfer failed: ' . $e->getMessage();
+                    try {
+                        // Deduct from source account
+                        $new_source_balance = $source_account['balance'] - $amount;
+                        $update_source_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
+                        $stmt = executeQuery($update_source_sql, [$new_source_balance, $source_account['account_id']]);
+                        
+                        // Add to destination account
+                        $get_dest_balance_sql = "SELECT balance FROM accounts WHERE account_id = ?";
+                        $stmt = executeQuery($get_dest_balance_sql, [$dest_account['account_id']]);
+                        $dest_balance_result = fetchOne($stmt);
+                        $new_dest_balance = $dest_balance_result['balance'] + $amount;
+                        
+                        $update_dest_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
+                        $stmt = executeQuery($update_dest_sql, [$new_dest_balance, $dest_account['account_id']]);
+                        
+                        // Insert transaction record as COMPLETED
+                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'completed', NOW(), ?)";
+                        $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $source_account['account_id'], $dest_account['account_id'], $amount, $description, $user_id]);
+                        
+                        // Commit transaction
+                        $conn->commit();
+                        
+                        $_SESSION['success'] = 'Transfer of $' . number_format($amount, 2) . ' from account ' . $source_account['account_number'] . ' to your account ' . $dest_account['account_number'] . ' was successful.';
+                        header('Location: /customer/dashboard.php');
+                        exit();
+                    } catch (Exception $e) {
+                        $conn->rollback();
+                        $_SESSION['error'] = 'Transfer failed: ' . $e->getMessage();
+                    }
+                } else {
+                    // TRANSFER TO EXTERNAL ACCOUNT - Requires approval
+                    // Note: We check balance but don't deduct yet. Deduction happens on approval.
+                    try {
+                        // Insert transaction record as PENDING (requires employee approval)
+                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'pending', NULL, NULL)";
+                        $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $source_account['account_id'], $dest_account['account_id'], $amount, $description]);
+                        
+                        $_SESSION['success'] = 'Transfer request of $' . number_format($amount, 2) . ' from account ' . $source_account['account_number'] . ' to external account ' . $dest_account['account_number'] . ' submitted successfully. Awaiting employee approval. Funds will be transferred after approval.';
+                        header('Location: /customer/dashboard.php');
+                        exit();
+                    } catch (Exception $e) {
+                        $_SESSION['error'] = 'Transfer request failed: ' . $e->getMessage();
+                    }
                 }
             }
         }
@@ -108,8 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <li><a href="/customer/transfer.php" class="active"><i class="fas fa-paper-plane"></i> Transfer</a></li>
                 <li><a href="/customer/deposit.php"><i class="fas fa-arrow-down"></i> Deposit</a></li>
                 <li><a href="/customer/withdraw.php"><i class="fas fa-arrow-up"></i> Withdraw</a></li>
-                <li><a href="/customer/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
-                <li><a href="/customer/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>

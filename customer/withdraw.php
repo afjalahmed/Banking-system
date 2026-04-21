@@ -41,27 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate transaction reference
             $transaction_reference = 'WDR' . date('YmdHis') . rand(1000, 9999);
             
-            // Start transaction
-            $conn->begin_transaction();
-            
+            // Create pending transaction only - balance will update on approval
+            // Note: Balance check already done above, actual deduction happens on approval
             try {
-                // Update account balance
-                $new_balance = $account['balance'] - $amount;
-                $update_balance_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
-                $stmt = executeQuery($update_balance_sql, [$new_balance, $account_id]);
+                // Insert transaction record as PENDING (requires employee approval)
+                $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, NULL, 'withdrawal', ?, ?, 'pending', NULL, NULL)";
+                $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $account_id, $amount, $description]);
                 
-                // Insert transaction record (pending - requires employee approval)
-                $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, NULL, NULL, 'withdrawal', ?, ?, 'pending', NULL, NULL)";
-                $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $amount, $description]);
-                
-                // Commit transaction
-                $conn->commit();
-                
-                $_SESSION['success'] = 'Withdrawal request of $' . number_format($amount, 2) . ' from account ' . $account['account_number'] . ' submitted successfully. Awaiting employee approval.';
+                $_SESSION['success'] = 'Withdrawal request of $' . number_format($amount, 2) . ' from account ' . $account['account_number'] . ' submitted successfully. Awaiting employee approval. Your balance will be deducted after approval.';
                 header('Location: /customer/dashboard.php');
                 exit();
             } catch (Exception $e) {
-                $conn->rollback();
                 $_SESSION['error'] = 'Withdrawal failed: ' . $e->getMessage();
             }
         }
@@ -83,8 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <li><a href="/customer/transfer.php"><i class="fas fa-paper-plane"></i> Transfer</a></li>
                 <li><a href="/customer/deposit.php"><i class="fas fa-arrow-down"></i> Deposit</a></li>
                 <li><a href="/customer/withdraw.php" class="active"><i class="fas fa-arrow-up"></i> Withdraw</a></li>
-                <li><a href="/customer/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
-                <li><a href="/customer/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>

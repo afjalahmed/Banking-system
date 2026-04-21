@@ -195,8 +195,8 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                         <th>Account Name</th>
                         <th>Owner</th>
                         <th>Type</th>
+                        <th>Branch</th>
                         <th>Balance</th>
-                        <th>Currency</th>
                         <th>Status</th>
                         <th>Created At</th>
                         <th>Actions</th>
@@ -220,8 +220,8 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                                 <?php echo ucfirst($account['account_type']); ?>
                             </span>
                         </td>
+                        <td><?php echo htmlspecialchars($account['branch_name'] ?? 'N/A'); ?></td>
                         <td><strong>$<?php echo number_format($account['balance'], 2); ?></strong></td>
-                        <td><?php echo htmlspecialchars($account['currency']); ?></td>
                         <td>
                             <span class="badge badge-<?php echo $account['status'] === 'active' ? 'success' : ($account['status'] === 'frozen' ? 'warning' : ($account['status'] === 'closed' ? 'danger' : 'secondary')); ?>">
                                 <?php echo ucfirst($account['status']); ?>
@@ -229,6 +229,10 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                         </td>
                         <td><?php echo date('M d, Y', strtotime($account['created_at'])); ?></td>
                         <td class="actions">
+                            <a href="/admin/edit_account.php?id=<?php echo $account['account_id']; ?>" 
+                               class="btn btn-sm btn-primary" title="Edit Account">
+                                <i class="fas fa-edit"></i>
+                            </a>
                             <?php if ($account['status'] === 'active'): ?>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Freeze this account?');">
                                 <input type="hidden" name="action" value="freeze">
