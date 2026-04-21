@@ -89,7 +89,7 @@ $today_stats_sql = "SELECT
                 SUM(CASE WHEN transaction_type = 'deposit' THEN amount ELSE 0 END) as deposits,
                 SUM(CASE WHEN transaction_type = 'withdrawal' THEN amount ELSE 0 END) as withdrawals
               FROM transactions 
-              WHERE DATE(created_at) = ? AND status = 'completed'";
+              WHERE DATE(created_at) = ? AND status = 'APPROVED'";
 $today_stats_result = executeQuery($today_stats_sql, [$today]);
 $today_stats = fetchOne($today_stats_result);
 ?>
@@ -190,9 +190,9 @@ $today_stats = fetchOne($today_stats_result);
                         <label for="status">Status</label>
                         <select id="status" name="status" class="form-control">
                             <option value="all">All Status</option>
-                            <option value="pending" <?php echo $filters['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="completed" <?php echo $filters['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                            <option value="failed" <?php echo $filters['status'] === 'failed' ? 'selected' : ''; ?>>Failed</option>
+                            <option value="PENDING" <?php echo $filters['status'] === 'PENDING' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="APPROVED" <?php echo $filters['status'] === 'APPROVED' ? 'selected' : ''; ?>>Approved</option>
+                            <option value="REJECTED" <?php echo $filters['status'] === 'REJECTED' ? 'selected' : ''; ?>>Rejected</option>
                         </select>
                     </div>
                     
@@ -289,8 +289,8 @@ $today_stats = fetchOne($today_stats_result);
                             </td>
                             <td><strong>$<?php echo number_format($txn['amount'], 2); ?></strong></td>
                             <td>
-                                <span class="badge badge-<?php echo $txn['status'] === 'completed' ? 'success' : ($txn['status'] === 'pending' ? 'warning' : 'danger'); ?>">
-                                    <?php echo ucfirst($txn['status']); ?>
+                                <span class="badge badge-<?php echo $txn['status'] === 'APPROVED' ? 'success' : ($txn['status'] === 'PENDING' ? 'warning' : 'danger'); ?>">
+                                    <?php echo $txn['status']; ?>
                                 </span>
                             </td>
                             <td><?php echo $txn['processed_by_name'] ? htmlspecialchars($txn['processed_by_name']) : '-'; ?></td>

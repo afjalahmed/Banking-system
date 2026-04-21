@@ -237,10 +237,9 @@ $accounts = fetchAll($accounts_result);
                         <label for="status">Status</label>
                         <select id="status" name="status" class="form-control">
                             <option value="all">All Status</option>
-                            <option value="pending" <?php echo $filters['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="completed" <?php echo $filters['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                            <option value="failed" <?php echo $filters['status'] === 'failed' ? 'selected' : ''; ?>>Failed</option>
-                            <option value="cancelled" <?php echo $filters['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                            <option value="PENDING" <?php echo $filters['status'] === 'PENDING' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="APPROVED" <?php echo $filters['status'] === 'APPROVED' ? 'selected' : ''; ?>>Approved</option>
+                            <option value="REJECTED" <?php echo $filters['status'] === 'REJECTED' ? 'selected' : ''; ?>>Rejected</option>
                         </select>
                     </div>
                     
@@ -339,8 +338,8 @@ $accounts = fetchAll($accounts_result);
                             <td><strong>$<?php echo number_format($txn['amount'], 2); ?></strong></td>
                             <td><?php echo $txn['description'] ? htmlspecialchars(substr($txn['description'], 0, 50)) : '-'; ?></td>
                             <td>
-                                <span class="badge badge-<?php echo $txn['status'] === 'completed' ? 'success' : ($txn['status'] === 'pending' ? 'warning' : 'danger'); ?>">
-                                    <?php echo ucfirst($txn['status']); ?>
+                                <span class="badge badge-<?php echo $txn['status'] === 'APPROVED' ? 'success' : ($txn['status'] === 'PENDING' ? 'warning' : 'danger'); ?>">
+                                    <?php echo $txn['status']; ?>
                                 </span>
                             </td>
                             <td><?php echo $txn['processed_by_name'] ? htmlspecialchars($txn['processed_by_name']) : '-'; ?></td>

@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $update_dest_sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
                         $stmt = executeQuery($update_dest_sql, [$new_dest_balance, $dest_account['account_id']]);
                         
-                        // Insert transaction record as COMPLETED
-                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'completed', NOW(), ?)";
+                        // Insert transaction record as APPROVED (auto-approved for own account transfers)
+                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'APPROVED', NOW(), ?)";
                         $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $source_account['account_id'], $dest_account['account_id'], $amount, $description, $user_id]);
                         
                         // Commit transaction
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Note: We check balance but don't deduct yet. Deduction happens on approval.
                     try {
                         // Insert transaction record as PENDING (requires employee approval)
-                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'pending', NULL, NULL)";
+                        $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, ?, ?, 'transfer', ?, ?, 'PENDING', NULL, NULL)";
                         $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $source_account['account_id'], $dest_account['account_id'], $amount, $description]);
                         
                         $_SESSION['success'] = 'Transfer request of $' . number_format($amount, 2) . ' from account ' . $source_account['account_number'] . ' to external account ' . $dest_account['account_number'] . ' submitted successfully. Awaiting employee approval. Funds will be transferred after approval.';

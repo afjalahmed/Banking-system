@@ -104,8 +104,8 @@ if (empty($account_ids)) {
     // Get statistics
     $stats_sql = "SELECT 
                     COUNT(*) as count,
-                    SUM(CASE WHEN t.to_account_id IN ($placeholders) AND t.status = 'completed' THEN amount ELSE 0 END) as deposits,
-                    SUM(CASE WHEN t.from_account_id IN ($placeholders) AND t.status = 'completed' THEN amount ELSE 0 END) as withdrawals
+                    SUM(CASE WHEN t.to_account_id IN ($placeholders) AND t.status = 'APPROVED' THEN amount ELSE 0 END) as deposits,
+                    SUM(CASE WHEN t.from_account_id IN ($placeholders) AND t.status = 'APPROVED' THEN amount ELSE 0 END) as withdrawals
                   FROM transactions t
                   $where_clause";
     $stats_result = executeQuery($stats_sql, $params);
@@ -199,9 +199,9 @@ if (empty($account_ids)) {
                         <label for="status">Status</label>
                         <select id="status" name="status" class="form-control">
                             <option value="all">All Status</option>
-                            <option value="completed" <?php echo (isset($filters['status']) && $filters['status'] === 'completed') ? 'selected' : ''; ?>>Completed</option>
-                            <option value="pending" <?php echo (isset($filters['status']) && $filters['status'] === 'pending') ? 'selected' : ''; ?>>Pending</option>
-                            <option value="failed" <?php echo (isset($filters['status']) && $filters['status'] === 'failed') ? 'selected' : ''; ?>>Failed</option>
+                            <option value="APPROVED" <?php echo (isset($filters['status']) && $filters['status'] === 'APPROVED') ? 'selected' : ''; ?>>Approved</option>
+                            <option value="PENDING" <?php echo (isset($filters['status']) && $filters['status'] === 'PENDING') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="REJECTED" <?php echo (isset($filters['status']) && $filters['status'] === 'REJECTED') ? 'selected' : ''; ?>>Rejected</option>
                         </select>
                     </div>
                     
@@ -308,8 +308,8 @@ if (empty($account_ids)) {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge badge-<?php echo $txn['status'] === 'completed' ? 'success' : ($txn['status'] === 'pending' ? 'warning' : 'danger'); ?>">
-                                    <?php echo ucfirst($txn['status']); ?>
+                                <span class="badge badge-<?php echo $txn['status'] === 'APPROVED' ? 'success' : ($txn['status'] === 'PENDING' ? 'warning' : 'danger'); ?>">
+                                    <?php echo $txn['status']; ?>
                                 </span>
                             </td>
                         </tr>

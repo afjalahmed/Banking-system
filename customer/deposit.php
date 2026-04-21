@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create pending transaction only - balance will update on approval
             try {
                 // Insert transaction record as PENDING (requires employee approval)
-                $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, NULL, ?, 'deposit', ?, ?, 'pending', NULL, NULL)";
+                $insert_transaction_sql = "INSERT INTO transactions (transaction_reference, from_account_id, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) VALUES (?, NULL, ?, 'deposit', ?, ?, 'PENDING', NULL, NULL)";
                 $stmt = executeQuery($insert_transaction_sql, [$transaction_reference, $account_id, $amount, $description]);
                 
                 $_SESSION['success'] = 'Deposit request of $' . number_format($amount, 2) . ' to account ' . $account['account_number'] . ' submitted successfully. Awaiting employee approval. Your balance will be updated after approval.';

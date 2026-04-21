@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    FROM transactions t
                    LEFT JOIN accounts fa ON t.from_account_id = fa.account_id
                    LEFT JOIN accounts ta ON t.to_account_id = ta.account_id
-                   WHERE t.transaction_id = ? AND t.status = 'pending'";
+                   WHERE t.transaction_id = ? AND t.status = 'PENDING'";
         $txn_result = executeQuery($txn_sql, [$transaction_id]);
         $transaction = fetchOne($txn_result);
         
@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->begin_transaction();
                     
                     try {
-                        // Update transaction status to COMPLETED
-                        $update_sql = "UPDATE transactions SET status = 'completed', processed_at = NOW(), processed_by = ? 
+                        // Update transaction status to APPROVED
+                        $update_sql = "UPDATE transactions SET status = 'APPROVED', processed_at = NOW(), processed_by = ? 
                                       WHERE transaction_id = ?";
                         executeQuery($update_sql, [$_SESSION['user_id'], $transaction_id]);
                         
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $log_sql = "INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) 
                                    VALUES (?, ?, ?, ?, ?)";
                         executeQuery($log_sql, [$_SESSION['user_id'], 'ADMIN_APPROVE_TRANSACTION', 
-                                   'transactions', $transaction_id, json_encode(['status' => 'completed', 'type' => $transaction['transaction_type']])]);
+                                   'transactions', $transaction_id, json_encode(['status' => 'APPROVED', 'type' => $transaction['transaction_type']])]);
                     } catch (Exception $e) {
                         $conn->rollback();
                         $errors[] = "Approval failed: " . $e->getMessage();
@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 // Reject transaction - no balance changes needed
-                $update_sql = "UPDATE transactions SET status = 'rejected', processed_at = NOW(), processed_by = ? 
+                $update_sql = "UPDATE transactions SET status = 'REJECTED', processed_at = NOW(), processed_by = ? 
                               WHERE transaction_id = ?";
                 executeQuery($update_sql, [$_SESSION['user_id'], $transaction_id]);
                 $success = "Transaction rejected successfully";
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $log_sql = "INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) 
                            VALUES (?, ?, ?, ?, ?)";
                 executeQuery($log_sql, [$_SESSION['user_id'], 'ADMIN_REJECT_TRANSACTION', 
-                           'transactions', $transaction_id, json_encode(['status' => 'rejected'])]);
+                           'transactions', $transaction_id, json_encode(['status' => 'REJECTED'])]);
             }
         } else {
             $errors[] = "Transaction not found or already processed";
@@ -123,20 +123,20 @@ $pending_sql = "SELECT t.*,
                 LEFT JOIN accounts ta ON t.to_account_id = ta.account_id
                 LEFT JOIN users fu ON fa.user_id = fu.user_id
                 LEFT JOIN users tu ON ta.user_id = tu.user_id
-                WHERE t.status = 'pending'
+                WHERE t.status = 'PENDING'
                 ORDER BY t.created_at ASC";
 $pending_result = executeQuery($pending_sql);
 $pending_transactions = fetchAll($pending_result);
 
 // Get statistics
 $pending_count = count($pending_transactions);
-$pending_amount_sql = "SELECT SUM(amount) as total FROM transactions WHERE status = 'pending'";
+$pending_amount_sql = "SELECT SUM(amount) as total FROM transactions WHERE status = 'PENDING'";
 $pending_amount_result = executeQuery($pending_amount_sql);
 $pending_amount = fetchOne($pending_amount_result)['total'] ?? 0;
 
 // Get breakdown by type
 $type_count_sql = "SELECT transaction_type, COUNT(*) as count, SUM(amount) as total 
-                    FROM transactions WHERE status = 'pending' GROUP BY transaction_type";
+                    FROM transactions WHERE status = 'PENDING' GROUP BY transaction_type";
 $type_count_result = executeQuery($type_count_sql);
 $type_breakdown = fetchAll($type_count_result);
 ?>
@@ -151,7 +151,8 @@ $type_breakdown = fetchAll($type_count_result);
             <ul>
                 <li><a href="/admin/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="/admin/users.php"><i class="fas fa-users"></i> Users</a></li>
-                <li><a href="/admin/accounts.php"><i class="fas fa-university"></i> Accounts</a></li>
+                <li><a href="/admin/accounts.php"><i class="fas fa-university"></i> All Accounts</a></li>
+                <li><a href="/admin/create_account.php"><i class="fas fa-plus-circle"></i> Create Account</a></li>
                 <li><a href="/admin/transactions.php"><i class="fas fa-exchange-alt"></i> All Transactions</a></li>
                 <li><a href="/admin/pending_transactions.php" class="active"><i class="fas fa-clock"></i> Pending Approval</a></li>
                 <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>

@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($initial_balance > 0) {
                 $txn_ref = 'TXN' . date('Ymd') . strtoupper(substr(uniqid(), -6));
                 $txn_sql = "INSERT INTO transactions (transaction_reference, to_account_id, transaction_type, amount, description, status, processed_at, processed_by) 
-                           VALUES (?, ?, 'deposit', ?, 'Initial deposit', 'completed', NOW(), ?)";
+                           VALUES (?, ?, 'deposit', ?, 'Initial deposit', 'APPROVED', NOW(), ?)";
                 executeQuery($txn_sql, [$txn_ref, $new_account_id, $initial_balance, $_SESSION['user_id']]);
             }
             
