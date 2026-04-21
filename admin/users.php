@@ -89,6 +89,8 @@ $role_counts = fetchAll($role_counts_result);
                 <li><a href="/admin/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="/admin/users.php" class="active"><i class="fas fa-users"></i> Manage Users</a></li>
                 <li><a href="/admin/accounts.php"><i class="fas fa-university"></i> All Accounts</a></li>
+                <li><a href="/admin/create_account.php"><i class="fas fa-plus-circle"></i> Create Account</a></li>
+                <li><a href="/admin/account_types.php"><i class="fas fa-tags"></i> Account Types</a></li>
                 <li><a href="/admin/transactions.php"><i class="fas fa-exchange-alt"></i> Transactions</a></li>
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>

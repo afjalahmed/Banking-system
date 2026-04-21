@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Sanitize inputs
         $account_name = sanitize($_POST['account_name'] ?? '');
         $branch_name = sanitize($_POST['branch_name'] ?? '');
-        $account_type = sanitize($_POST['account_type'] ?? '');
+        $account_type_id = (int)($_POST['account_type_id'] ?? 0);
         $status = sanitize($_POST['status'] ?? 'active');
         
         // Validation
@@ -50,8 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Branch name is required";
         }
         
-        if (!in_array($account_type, ['savings', 'checking', 'fixed_deposit'])) {
-            $errors[] = "Invalid account type";
+        if ($account_type_id <= 0) {
+            $errors[] = "Please select an account type";
+        } else {
+            // Verify account type exists
+            $type_check_sql = "SELECT id FROM account_types WHERE id = ? AND status = 'active'";
+            $type_check_result = executeQuery($type_check_sql, [$account_type_id]);
+            if (!fetchOne($type_check_result)) {
+                $errors[] = "Selected account type not found or inactive";
+            }
         }
         
         if (!in_array($status, ['active', 'inactive', 'frozen', 'closed'])) {
@@ -69,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // If no errors, update account
         if (empty($errors)) {
-            $sql = "UPDATE accounts SET account_name = ?, branch_name = ?, account_type = ?, status = ? WHERE account_id = ?";
-            executeQuery($sql, [$account_name, $branch_name, $account_type, $status, $account_id]);
+            $sql = "UPDATE accounts SET account_name = ?, branch_name = ?, account_type_id = ?, status = ? WHERE account_id = ?";
+            executeQuery($sql, [$account_name, $branch_name, $account_type_id, $status, $account_id]);
             
             // Log action
             $log_sql = "INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) VALUES (?, ?, ?, ?, ?)";
@@ -111,6 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $customers_sql = "SELECT user_id, username, full_name, email FROM users WHERE role = 'customer' AND status = 'active' ORDER BY full_name";
 $customers_result = executeQuery($customers_sql);
 $customers = fetchAll($customers_result);
+
+// Get all account types for dropdown
+$account_types_sql = "SELECT id, type_name, description FROM account_types WHERE status = 'active' ORDER BY type_name";
+$account_types_result = executeQuery($account_types_sql);
+$account_types = fetchAll($account_types_result);
 ?>
 
 <div class="dashboard-layout">
@@ -124,6 +136,8 @@ $customers = fetchAll($customers_result);
                 <li><a href="/admin/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="/admin/users.php"><i class="fas fa-users"></i> Manage Users</a></li>
                 <li><a href="/admin/accounts.php" class="active"><i class="fas fa-university"></i> All Accounts</a></li>
+                <li><a href="/admin/create_account.php"><i class="fas fa-plus-circle"></i> Create Account</a></li>
+                <li><a href="/admin/account_types.php"><i class="fas fa-tags"></i> Account Types</a></li>
                 <li><a href="/admin/transactions.php"><i class="fas fa-exchange-alt"></i> Transactions</a></li>
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
@@ -222,12 +236,20 @@ $customers = fetchAll($customers_result);
                     
                     <!-- Account Type -->
                     <div class="form-group">
-                        <label for="account_type">Account Type <span class="required">*</span></label>
-                        <select id="account_type" name="account_type" class="form-control" required>
-                            <option value="savings" <?php echo $account['account_type'] === 'savings' ? 'selected' : ''; ?>>Savings</option>
-                            <option value="checking" <?php echo $account['account_type'] === 'checking' ? 'selected' : ''; ?>>Checking</option>
-                            <option value="fixed_deposit" <?php echo $account['account_type'] === 'fixed_deposit' ? 'selected' : ''; ?>>Fixed Deposit</option>
+                        <label for="account_type_id">Account Type <span class="required">*</span></label>
+                        <select id="account_type_id" name="account_type_id" class="form-control" required>
+                            <option value="">-- Select Account Type --</option>
+                            <?php foreach ($account_types as $type): ?>
+                            <option value="<?php echo $type['id']; ?>" 
+                                    <?php echo ($account['account_type_id'] == $type['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($type['type_name']); ?>
+                                <?php echo $type['description'] ? ' - ' . htmlspecialchars(substr($type['description'], 0, 30)) : ''; ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
+                        <?php if (empty($account_types)): ?>
+                        <small class="text-danger">No active account types available.</small>
+                        <?php endif; ?>
                     </div>
                     
                     <!-- Status -->

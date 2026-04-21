@@ -1,6 +1,6 @@
 <?php
 /**
- * Create Bank Account
+ * Create Bank Account (Admin)
  * Banking & Transaction System
  */
 
@@ -117,16 +117,19 @@ $account_types = fetchAll($account_types_result);
     <!-- Sidebar -->
     <aside class="dashboard-sidebar">
         <div class="dashboard-sidebar-header">
-            <h2><i class="fas fa-user-tie"></i> Employee Panel</h2>
+            <h2><i class="fas fa-user-shield"></i> Admin Panel</h2>
         </div>
         <nav class="dashboard-sidebar-menu">
             <ul>
-                <li><a href="/employee/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="/employee/add_customer.php"><i class="fas fa-user-plus"></i> Add Customer</a></li>
-                <li><a href="/employee/create_account.php" class="active"><i class="fas fa-university"></i> Create Account</a></li>
-                <li><a href="/employee/accounts.php"><i class="fas fa-list"></i> All Accounts</a></li>
-                <li><a href="/employee/deposit.php"><i class="fas fa-arrow-down"></i> Deposit</a></li>
-                <li><a href="/employee/withdraw.php"><i class="fas fa-arrow-up"></i> Withdraw</a></li>
+                <li><a href="/admin/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/users.php"><i class="fas fa-users"></i> Manage Users</a></li>
+                <li><a href="/admin/accounts.php"><i class="fas fa-university"></i> All Accounts</a></li>
+                <li><a href="/admin/create_account.php" class="active"><i class="fas fa-plus-circle"></i> Create Account</a></li>
+                <li><a href="/admin/account_types.php"><i class="fas fa-tags"></i> Account Types</a></li>
+                <li><a href="/admin/transactions.php"><i class="fas fa-exchange-alt"></i> Transactions</a></li>
+                <li><a href="/admin/pending_transactions.php"><i class="fas fa-clock"></i> Pending Approval</a></li>
+                <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
+                <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
@@ -136,7 +139,7 @@ $account_types = fetchAll($account_types_result);
     <!-- Main Content -->
     <main class="dashboard-content">
         <div class="dashboard-header">
-            <h1><i class="fas fa-university"></i> Create Bank Account</h1>
+            <h1><i class="fas fa-plus-circle"></i> Create Bank Account</h1>
             <div class="user-info">
                 <span>Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
                 <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
@@ -166,7 +169,7 @@ $account_types = fetchAll($account_types_result);
         <div class="table-container">
             <div class="table-header">
                 <h2>New Account Details</h2>
-                <a href="/employee/accounts.php" class="btn btn-secondary">
+                <a href="/admin/accounts.php" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Accounts
                 </a>
             </div>
@@ -225,10 +228,11 @@ $account_types = fetchAll($account_types_result);
                     
                     <!-- Initial Balance -->
                     <div class="form-group">
-                        <label for="initial_balance">Initial Balance</label>
+                        <label for="initial_balance">Initial Balance (USD)</label>
                         <input type="number" id="initial_balance" name="initial_balance" class="form-control" 
-                               value="<?php echo isset($_POST['initial_balance']) ? htmlspecialchars($_POST['initial_balance']) : '0.00'; ?>" 
+                               value="<?php echo isset($_POST['initial_balance']) ? htmlspecialchars($_POST['initial_balance']) : '0'; ?>" 
                                min="0" step="0.01" placeholder="0.00">
+                        <small>Leave as 0 for zero balance account</small>
                     </div>
                     
                     <!-- Currency -->
@@ -243,12 +247,11 @@ $account_types = fetchAll($account_types_result);
                     </div>
                 </div>
                 
-                <!-- Buttons -->
                 <div class="form-actions" style="margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create Account
+                        <i class="fas fa-plus-circle"></i> Create Account
                     </button>
-                    <a href="/employee/accounts.php" class="btn btn-secondary">
+                    <a href="/admin/accounts.php" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Cancel
                     </a>
                 </div>

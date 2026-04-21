@@ -55,16 +55,17 @@ if ($status_filter !== 'all') {
 }
 
 if ($type_filter !== 'all') {
-    $where_conditions[] = "a.account_type = ?";
+    $where_conditions[] = "a.account_type_id = ?";
     $params[] = $type_filter;
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
 
-// Get all accounts with user information
-$accounts_sql = "SELECT a.*, u.username, u.full_name, u.email 
+// Get all accounts with user information and account type
+$accounts_sql = "SELECT a.*, u.username, u.full_name, u.email, at.type_name 
                  FROM accounts a 
                  LEFT JOIN users u ON a.user_id = u.user_id 
+                 LEFT JOIN account_types at ON a.account_type_id = at.id
                  $where_clause 
                  ORDER BY a.created_at DESC";
 $accounts_result = executeQuery($accounts_sql, $params);
@@ -83,9 +84,17 @@ $frozen_accounts_sql = "SELECT COUNT(*) as count FROM accounts WHERE status = 'f
 $frozen_accounts_result = executeQuery($frozen_accounts_sql);
 $frozen_accounts = fetchOne($frozen_accounts_result)['count'];
 
-$accounts_by_type_sql = "SELECT account_type, COUNT(*) as count FROM accounts GROUP BY account_type";
+$accounts_by_type_sql = "SELECT at.type_name, COUNT(*) as count 
+                         FROM accounts a 
+                         LEFT JOIN account_types at ON a.account_type_id = at.id 
+                         GROUP BY at.type_name";
 $accounts_by_type_result = executeQuery($accounts_by_type_sql);
 $accounts_by_type = fetchAll($accounts_by_type_result);
+
+// Get account types for filter dropdown
+$filter_types_sql = "SELECT id, type_name FROM account_types WHERE status = 'active' ORDER BY type_name";
+$filter_types_result = executeQuery($filter_types_sql);
+$filter_types = fetchAll($filter_types_result);
 ?>
 
 <div class="dashboard-layout">
@@ -99,6 +108,7 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                 <li><a href="/admin/dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="/admin/users.php"><i class="fas fa-users"></i> Manage Users</a></li>
                 <li><a href="/admin/accounts.php" class="active"><i class="fas fa-university"></i> All Accounts</a></li>
+                <li><a href="/admin/account_types.php"><i class="fas fa-tags"></i> Account Types</a></li>
                 <li><a href="/admin/transactions.php"><i class="fas fa-exchange-alt"></i> Transactions</a></li>
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
@@ -168,13 +178,19 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
         <div class="table-container">
             <div class="table-header">
                 <h2>Account List</h2>
-                <div class="filter-controls">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <a href="/admin/create_account.php" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Create Account
+                    </a>
+                    <div class="filter-controls">
                     <form method="GET" class="filter-form">
                         <select name="type" onchange="this.form.submit()">
                             <option value="all" <?php echo $type_filter === 'all' ? 'selected' : ''; ?>>All Types</option>
-                            <option value="savings" <?php echo $type_filter === 'savings' ? 'selected' : ''; ?>>Savings</option>
-                            <option value="checking" <?php echo $type_filter === 'checking' ? 'selected' : ''; ?>>Checking</option>
-                            <option value="fixed_deposit" <?php echo $type_filter === 'fixed_deposit' ? 'selected' : ''; ?>>Fixed Deposit</option>
+                            <?php foreach ($filter_types as $ftype): ?>
+                            <option value="<?php echo $ftype['id']; ?>" <?php echo $type_filter == $ftype['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ftype['type_name']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                         <select name="status" onchange="this.form.submit()">
                             <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Status</option>
@@ -184,6 +200,7 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                             <option value="closed" <?php echo $status_filter === 'closed' ? 'selected' : ''; ?>>Closed</option>
                         </select>
                     </form>
+                    </div>
                 </div>
             </div>
 
@@ -217,7 +234,7 @@ $accounts_by_type = fetchAll($accounts_by_type_result);
                         </td>
                         <td>
                             <span class="badge badge-info">
-                                <?php echo ucfirst($account['account_type']); ?>
+                                <?php echo htmlspecialchars($account['type_name'] ?? $account['account_type'] ?? 'N/A'); ?>
                             </span>
                         </td>
                         <td><?php echo htmlspecialchars($account['branch_name'] ?? 'N/A'); ?></td>
