@@ -11,8 +11,13 @@ $user_id = $_SESSION['user_id'];
 $errors = [];
 $success = false;
 
-// Fetch current user data
-$sql = "SELECT user_id, username, email, full_name, phone, address FROM users WHERE user_id = ?";
+// Fetch current user data with department and designation
+$sql = "SELECT u.*, d.department_name, des.designation_name, r.role_name 
+        FROM users u 
+        LEFT JOIN departments d ON u.department_id = d.department_id 
+        LEFT JOIN designations des ON u.designation_id = des.designation_id 
+        LEFT JOIN roles r ON u.role = r.role_slug
+        WHERE u.user_id = ?";
 $result = executeQuery($sql, [$user_id]);
 $user = fetchOne($result);
 
@@ -193,6 +198,23 @@ if ($_SESSION['role'] === 'admin') {
                         <input type="text" class="form-control" value="<?php echo htmlspecialchars($user['username']); ?>" disabled>
                         <small class="text-muted">Username cannot be changed</small>
                     </div>
+                    
+                    <?php if ($user['department_name'] || $user['designation_name']): ?>
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                        <?php if ($user['department_name']): ?>
+                        <div class="form-group">
+                            <label><i class="fas fa-building"></i> Department</label>
+                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($user['department_name']); ?>" disabled>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($user['designation_name']): ?>
+                        <div class="form-group" style="margin-top: 0.5rem;">
+                            <label><i class="fas fa-id-badge"></i> Designation</label>
+                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($user['designation_name']); ?>" disabled>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="full_name">Full Name <span class="required">*</span></label>

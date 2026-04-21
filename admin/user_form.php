@@ -19,13 +19,15 @@ $user = [
     'phone' => '',
     'address' => '',
     'role' => 'customer',
-    'status' => 'active'
+    'status' => 'active',
+    'department_id' => null,
+    'designation_id' => null
 ];
 $errors = [];
 
 // If editing, fetch user data
 if ($is_edit) {
-    $sql = "SELECT user_id, username, email, full_name, phone, address, role, status FROM users WHERE user_id = ?";
+    $sql = "SELECT user_id, username, email, full_name, phone, address, role, status, department_id, designation_id FROM users WHERE user_id = ?";
     $result = executeQuery($sql, [$user_id]);
     $user_data = fetchOne($result);
     
@@ -49,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = sanitize($_POST['address'] ?? '');
     $role = sanitize($_POST['role'] ?? 'customer');
     $status = sanitize($_POST['status'] ?? 'active');
+    $department_id = !empty($_POST['department_id']) ? (int)$_POST['department_id'] : null;
+    $designation_id = !empty($_POST['designation_id']) ? (int)$_POST['designation_id'] : null;
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     
@@ -113,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($password)) {
                 // Update with new password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $sql = "UPDATE users SET username = ?, email = ?, password = ?, full_name = ?, phone = ?, address = ?, role = ?, status = ? WHERE user_id = ?";
-                executeQuery($sql, [$username, $email, $hashed_password, $full_name, $phone, $address, $role, $status, $user_id]);
+                $sql = "UPDATE users SET username = ?, email = ?, password = ?, full_name = ?, phone = ?, address = ?, role = ?, status = ?, department_id = ?, designation_id = ? WHERE user_id = ?";
+                executeQuery($sql, [$username, $email, $hashed_password, $full_name, $phone, $address, $role, $status, $department_id, $designation_id, $user_id]);
             } else {
                 // Update without changing password
-                $sql = "UPDATE users SET username = ?, email = ?, full_name = ?, phone = ?, address = ?, role = ?, status = ? WHERE user_id = ?";
-                executeQuery($sql, [$username, $email, $full_name, $phone, $address, $role, $status, $user_id]);
+                $sql = "UPDATE users SET username = ?, email = ?, full_name = ?, phone = ?, address = ?, role = ?, status = ?, department_id = ?, designation_id = ? WHERE user_id = ?";
+                executeQuery($sql, [$username, $email, $full_name, $phone, $address, $role, $status, $department_id, $designation_id, $user_id]);
             }
             
             // Log the action
@@ -130,8 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Create new user
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (username, email, password, full_name, phone, address, role, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            executeQuery($sql, [$username, $email, $hashed_password, $full_name, $phone, $address, $role, $status]);
+            $sql = "INSERT INTO users (username, email, password, full_name, phone, address, role, status, department_id, designation_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            executeQuery($sql, [$username, $email, $hashed_password, $full_name, $phone, $address, $role, $status, $department_id, $designation_id]);
             
             // Get the new user ID
             $new_user_id = $conn->insert_id;
@@ -153,7 +157,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user['address'] = $address;
     $user['role'] = $role;
     $user['status'] = $status;
+    $user['department_id'] = $department_id;
+    $user['designation_id'] = $designation_id;
 }
+
+// Fetch departments and designations for dropdowns
+$dept_sql = "SELECT department_id, department_name FROM departments WHERE status = 'active' ORDER BY department_name";
+$dept_result = executeQuery($dept_sql);
+$departments = fetchAll($dept_result);
+
+$desg_sql = "SELECT designation_id, designation_name FROM designations WHERE status = 'active' ORDER BY designation_name";
+$desg_result = executeQuery($desg_sql);
+$designations = fetchAll($desg_result);
 
 $page_title = $is_edit ? 'Edit User' : 'Create User';
 ?>
@@ -173,6 +188,8 @@ $page_title = $is_edit ? 'Edit User' : 'Create User';
                 <li><a href="/admin/audit_logs.php"><i class="fas fa-history"></i> Audit Logs</a></li>
                 <li><a href="/admin/reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="/admin/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/admin/departments.php"><i class="fas fa-building"></i> Departments</a></li>
+                <li><a href="/admin/designations.php"><i class="fas fa-id-badge"></i> Designations</a></li>
                 <li><a href="/profile.php"><i class="fas fa-user-cog"></i> Profile</a></li>
                 <li><a href="/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
@@ -267,6 +284,34 @@ $page_title = $is_edit ? 'Edit User' : 'Create User';
                             <option value="active" <?php echo $user['status'] === 'active' ? 'selected' : ''; ?>>Active</option>
                             <option value="inactive" <?php echo $user['status'] === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
                             <option value="suspended" <?php echo $user['status'] === 'suspended' ? 'selected' : ''; ?>>Suspended</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Department -->
+                    <div class="form-group">
+                        <label for="department_id">Department</label>
+                        <select id="department_id" name="department_id" class="form-control">
+                            <option value="">-- Select Department --</option>
+                            <?php foreach ($departments as $dept): ?>
+                            <option value="<?php echo $dept['department_id']; ?>" 
+                                    <?php echo ($user['department_id'] == $dept['department_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($dept['department_name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Designation -->
+                    <div class="form-group">
+                        <label for="designation_id">Designation</label>
+                        <select id="designation_id" name="designation_id" class="form-control">
+                            <option value="">-- Select Designation --</option>
+                            <?php foreach ($designations as $desg): ?>
+                            <option value="<?php echo $desg['designation_id']; ?>" 
+                                    <?php echo ($user['designation_id'] == $desg['designation_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($desg['designation_name']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
