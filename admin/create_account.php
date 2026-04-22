@@ -228,7 +228,7 @@ $account_types = fetchAll($account_types_result);
                     
                     <!-- Initial Balance -->
                     <div class="form-group">
-                        <label for="initial_balance">Initial Balance (USD)</label>
+                        <label for="initial_balance">Initial Balance</label>
                         <input type="number" id="initial_balance" name="initial_balance" class="form-control" 
                                value="<?php echo isset($_POST['initial_balance']) ? htmlspecialchars($_POST['initial_balance']) : '0'; ?>" 
                                min="0" step="0.01" placeholder="0.00">

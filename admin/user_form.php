@@ -290,8 +290,8 @@ $page_title = $is_edit ? 'Edit User' : 'Create User';
                     
                     <!-- Department -->
                     <div class="form-group">
-                        <label for="department_id">Department</label>
-                        <select id="department_id" name="department_id" class="form-control">
+                        <label for="department_id">Department *</label>
+                        <select id="department_id" name="department_id" required class="form-control">
                             <option value="">-- Select Department --</option>
                             <?php foreach ($departments as $dept): ?>
                             <option value="<?php echo $dept['department_id']; ?>" 
@@ -304,8 +304,8 @@ $page_title = $is_edit ? 'Edit User' : 'Create User';
                     
                     <!-- Designation -->
                     <div class="form-group">
-                        <label for="designation_id">Designation</label>
-                        <select id="designation_id" name="designation_id" class="form-control">
+                        <label for="designation_id">Designation *</label>
+                        <select id="designation_id" name="designation_id" required class="form-control">
                             <option value="">-- Select Designation --</option>
                             <?php foreach ($designations as $desg): ?>
                             <option value="<?php echo $desg['designation_id']; ?>" 
